@@ -7,7 +7,7 @@ SSTable format
 Some Basic Structure
 ----------------------
 
-..code-block::
+.. code-block:: bash
 
     BlockHandle:
         offset: varint64
@@ -24,10 +24,11 @@ Top Level Structure
 | 4. [footer]  ; fixed size
 | <end of SSTfile>
 
-Data Block
------------
+0. Data Block
+--------------
 
-..note::
+.. note::
+
     This Block is built by `block_builder.cc` in sources of RocksDB.
 
 | <begin of data block>
@@ -47,22 +48,23 @@ Data Block
 | [value]          : char[value_length]    ; value bytes
 | <end of group>
 
-Meta Block
------------
+1. Meta Block
+---------------
 
-..note::
+.. note::
+
     The meta block is built by `block_builder.cc` in sources of RocksDB too.
 
-Filter Meta Block
-````````````````````
+1.0. Filter Meta Block
+```````````````````````
 
 | 1. Full filter block for entire SSTable.
 | 2. Partitioned filter for too big filter block.In this case, the are two-level
    of filter, the one is the top-level index for 2nd filter block, the other is
    the real of filter meta block.
 
-Properities Block
-````````````````````
+1.1. Properities Block
+```````````````````````
 
 | <begin of Properities Block>
 | [prop0]  ; K/V
@@ -70,34 +72,37 @@ Properities Block
 | <end of Properities Block>
 
 Default propertiies as bellow:
- - data size
- - index size
- - filter size
- - raw key size  ; size of key before any process(such as compress etc.)
- - raw value size  ; size of value before any process(such as compress etc.)
- - number of entries
- - number of data block
 
-Compression Dictionary
-``````````````````````````
+- data size
+- index size
+- filter size
+- raw key size  ; size of key before any process(such as compress etc.)
+- raw value size  ; size of value before any process(such as compress etc.)
+- number of entries
+- number of data block
 
-..note::
+1.2. Compression Dictionary
+````````````````````````````
+
+.. note::
+
     This only apply to bottommost level.
 
-Range Deletion
-````````````````````
+1.3. Range Deletion
+``````````````````````
 
-..note::
+.. note::
+
     Can only be obsoleted during compaction to the bottommost level.
 
- - User Key : the range's begin key
- - Sequence Number : the sequence number at which range-deletion was inserted
-   to the DB
- - Value Type : kTypeRangeDeletion
- - Value : the range's end key
+- User Key : the range's begin key
+- Sequence Number : the sequence number at which range-deletion was inserted
+  to the DB
+- Value Type : kTypeRangeDeletion
+- Value : the range's end key
 
-Meta Index
--------------
+2. Meta Index
+----------------
 
 The entry of each metaindex block.
 
@@ -109,11 +114,11 @@ The entry of each metaindex block.
 | ...
 | <end of metaindex>
 
-Index Block
+3. Index Block
 ---------------
 
-One-Level
-`````````````
+3.0. One-Level
+```````````````
 
 The entry of each data block.
 
@@ -125,10 +130,11 @@ The entry of each data block.
 | ...
 | <end of index>
 
-Two-Level
-````````````
+3.1. Two-Level
+```````````````
 
-..note::
+.. note::
+
     If enable kTwoLevelIndexSearch
 
 | <begin of index>
@@ -140,8 +146,8 @@ Two-Level
 | [index block 2nd]
 | <end of index>
 
-Footer
--------
+4. Footer
+-----------
 
 | <begin of Footer>
 | [metaindex_handle] : char[p]
