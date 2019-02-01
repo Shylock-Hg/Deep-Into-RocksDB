@@ -12,6 +12,7 @@ Welcome to deep into RocksDB's documentation!
 .. toctree::
    :maxdepth: 2
 
+   Files
    SSTable-format
 
 
