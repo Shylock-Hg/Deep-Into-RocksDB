@@ -1,7 +1,7 @@
 SSTable format
 ===============
 
-| The full name of SSTable is `Sorted Static Table` which the basic file to
+| The full name of SSTable is `Static Sorted Table` which the basic file to
  store the data in RocksDB.
 
 Some Basic Structure
