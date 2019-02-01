@@ -14,6 +14,7 @@ Welcome to deep into RocksDB's documentation!
 
    Files
    SSTable-format
+   WAL-file-format
 
 
 
