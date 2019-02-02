@@ -10,7 +10,7 @@ Welcome to deep into RocksDB's documentation!
  `Abstraction` and `Tricks`.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
    Files
    SSTable-format
