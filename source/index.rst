@@ -13,7 +13,7 @@ Welcome to deep into RocksDB's documentation!
    :maxdepth: 4
 
    Files
-   SSTable-format
+   SSTable-format-BlockBased
    WAL-file-format
 
 

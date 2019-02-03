@@ -1,5 +1,5 @@
-SSTable format
-===============
+SSTable format Block Based
+===============================
 
 | The full name of SSTable is `Static Sorted Table` which the basic file to
  store the data in RocksDB.
