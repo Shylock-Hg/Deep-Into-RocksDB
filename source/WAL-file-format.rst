@@ -23,9 +23,15 @@ Top-level
 Record format
 --------------
 
-| <begin of record>
-| CRC32   : fixed32
-| Size    : fixed32
-| Type    : fixed8  ; kZeroType, kFullType, kFirstType, kMiddleType, kLastType
-| Payload : char[Size]
-| <end of record>
++----------+------------+------------------------------------+
+| label    | type       | note                               |
++----------+------------+------------------------------------+
+| CRC32    | fixed32    |                                    |
++----------+------------+------------------------------------+
+| Size     | fixed32    |                                    |
++----------+------------+------------------------------------+
+| Type     | fixed8     | kZeroType, kFullType, kFirstType,  |
+|          |            | kMiddleType, kLastType             |
++----------+------------+------------------------------------+
+| Payload  | char[Size] |                                    |
++----------+------------+------------------------------------+

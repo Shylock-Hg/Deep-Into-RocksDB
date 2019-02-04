@@ -10,22 +10,35 @@ SSTable format Block Based
 Some Basic Structure
 ----------------------
 
-.. code-block:: bash
+The format of BlockHandle as below:
 
-    BlockHandle:
-        offset: varint64
-        size:   varint64
++-----------+-----------+
+| label     | type      |
++-----------+-----------+
+| offset    | varint64  |
++-----------+-----------+
+| size      | varint64  |
++-----------+-----------+
 
 Top Level Structure
 --------------------
 
-| <begin of SSTfile>
-| 0. [data block] * N  ; sorted order
-| 1. [meta block] * K  ; filter, stats, compression dictionary, range deletion
-| 2. [metaindex block] * K
-| 3. [index block] * N ; N for one-level index, Not N for two-level index
-| 4. [footer]  ; fixed size
-| <end of SSTfile>
++----------------------+--------------------+---------------------------------+
+| label                | type               | note                            |
++----------------------+--------------------+---------------------------------+
+| data blocks          | data_block[N]      | sorted order                    |
++----------------------+--------------------+---------------------------------+
+| meta blocks          | meta_block[K]      | filter, stats,                  |
+|                      |                    | compression dictionary,         |
+|                      |                    | range deletion                  |
++----------------------+--------------------+---------------------------------+
+| metaindex blocks     | metaindex_block[K] |                                 |
++----------------------+--------------------+---------------------------------+
+| index blocks         | index_block[N]     | N for one-level index,          |
+|                      |                    | Not N for two-level index       |
++----------------------+--------------------+---------------------------------+
+| footer               | footer             | fixed size                      |
++----------------------+--------------------+---------------------------------+
 
 0. Data Block
 --------------
@@ -34,22 +47,38 @@ Top Level Structure
 
     This Block is built by `block_builder.cc` in sources of RocksDB.
 
-| <begin of data block>
-| [group]
-| ...
-| [groups_offset] : fixed32[groups_count]
-| [groups_count]  : fixed32
-| [compress_type] : char
-| [CRC32]         : fixed32
-| <end of data block>
+The *data block* format as below:
 
-| <begin of group>
-| [shared_bytes]   : varint32  ; compress prefix of key, 0 for restart point
-| [unshared_bytes] : varint32  ; unshared key bytes length
-| [value_length]   : varint32  ; value length
-| [key_delta]      : char[unshared_bytes]  ; unshared key bytes
-| [value]          : char[value_length]    ; value bytes
-| <end of group>
++------------------------+-------------------------+
+| label                  | type                    |
++------------------------+-------------------------+
+| groups                 | group[groups_count]     |
++------------------------+-------------------------+
+| groups_offset          | fixed32[groups_count]   |
++------------------------+-------------------------+
+| groups_count           | fixed32                 |
++------------------------+-------------------------+
+| compress_type          | char                    |
++------------------------+-------------------------+
+| CRC32                  | fixed32                 |
++------------------------+-------------------------+
+
+The *data group* format as below:
+
++--------------------+-----------------------+--------------------------+
+| label              | type                  | note                     |
++--------------------+-----------------------+--------------------------+
+| shared_bytes       | varint32              | compress prefix of key,  |
+|                    |                       | 0 for restart point      |
++--------------------+-----------------------+--------------------------+
+| unshared_bytes     | varint32              | unshared key bytes length|
++--------------------+-----------------------+--------------------------+
+| value_length       | varint32              | value length             |
++--------------------+-----------------------+--------------------------+
+| key_delta          | char[unshared_bytes]  | unshared key bytes       |
++--------------------+-----------------------+--------------------------+
+| value              | char[value_length]    | value bytes              |
++--------------------+-----------------------+--------------------------+
 
 1. Meta Block
 ---------------
@@ -69,12 +98,13 @@ Top Level Structure
 1.1. Properities Block
 ```````````````````````
 
-| <begin of Properities Block>
-| [prop0]  ; K/V
-| ...
-| <end of Properities Block>
++------------+----------------+
+| label      | type           |
++------------+----------------+
+| props      | K/V[P]         |
++------------+----------------+
 
-Default propertiies as bellow:
+Default propertiies as below:
 
 - data size
 - index size
@@ -98,11 +128,18 @@ Default propertiies as bellow:
 
     Can only be obsoleted during compaction to the bottommost level.
 
-- User Key : the range's begin key
-- Sequence Number : the sequence number at which range-deletion was inserted
-  to the DB
-- Value Type : kTypeRangeDeletion
-- Value : the range's end key
++-----------------+----------------------------------------------------------+
+| label           | note                                                     |
++-----------------+----------------------------------------------------------+
+| User Key        | the range's begin key                                    |
++-----------------+----------------------------------------------------------+
+| Sequence Number | the sequence number at which range-deletion was inserted |
+|                 | to the DB                                                |
++-----------------+----------------------------------------------------------+
+| Value Type      | kTypeRangeDeletion                                       |
++-----------------+----------------------------------------------------------+
+| Value           | the range's end key                                      |
++-----------------+----------------------------------------------------------+
 
 2. Meta Index
 ----------------
@@ -112,10 +149,11 @@ The entry of each metaindex block.
 | K : name of the metablock
 | V : BlockHandle point to corresponding metablock.
 
-| <begin of metaindex>
-| [metaindex]
-| ...
-| <end of metaindex>
++---------------------+--------------------+
+| label               | type               |
++---------------------+--------------------+
+| metaindex blocks    | metaindex_block[K] |
++---------------------+--------------------+
 
 3. Index Block
 ---------------
@@ -128,10 +166,11 @@ The entry of each data block.
 | K : string >= last key and before first key in sucessive data block.
 | V : BlockHandle
 
-| <begin of index>
-| [index block]
-| ...
-| <end of index>
++-------------------+------------------+
+| label             | type             |
++-------------------+------------------+
+| index blocks      | index_block[N]   |
++-------------------+------------------+
 
 3.1. Two-Level
 ```````````````
@@ -140,21 +179,25 @@ The entry of each data block.
 
     If enable kTwoLevelIndexSearch
 
-| <begin of index>
-| [index block 1st]
-| ...
-| [index block 1st]
-| [index block 2nd]
-| ...
-| [index block 2nd]
-| <end of index>
++--------------------+---------------+
+| label              | type          |
++--------------------+---------------+
+| 1st index blocks   |               |
++--------------------+---------------+
+| 2nd index blocks   |               |
++--------------------+---------------+
 
 4. Footer
 -----------
 
-| <begin of Footer>
-| [metaindex_handle] : char[p]
-| [index_handle]     : char[q]
-| [padding]          : char[40-p-q]  ; zero for padding to fixed length
-| [magic]            : fixed64
-| <end of Footer>
++---------------------+-------------+---------------------------------------+
+| label               | type         | note                                 |
++---------------------+--------------+--------------------------------------+
+| metaindex_handle    | char[p]      | BlockHandle in fact                  |
++---------------------+--------------+--------------------------------------+
+| index_handle        | char[q]      | BlockHandle in fact                  |
++---------------------+--------------+--------------------------------------+
+| padding             | char[40-p-q] | zero for padding to fixed length     |
++---------------------+--------------+--------------------------------------+
+| [magic]             | fixed64      |                                      |
++---------------------+--------------+--------------------------------------+
