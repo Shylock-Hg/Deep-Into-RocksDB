@@ -16,6 +16,7 @@ Welcome to deep into RocksDB's documentation!
    SSTable-format-BlockBased
    SSTable-format-plain
    WAL-file-format
+   MEMTable-skiplist
 
 
 
