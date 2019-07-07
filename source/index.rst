@@ -16,6 +16,7 @@ Here recommand a nice tool to view c/c++ and java sources: sourcetrail_.
 .. toctree::
    :maxdepth: 1
 
+   Top
    Files
    SSTable-format-BlockBased
    SSTable-format-plain
