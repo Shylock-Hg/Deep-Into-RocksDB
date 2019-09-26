@@ -9,7 +9,7 @@ Welcome to deep into RocksDB's documentation!
 | This is a manual deep into RocksDB about `Structure`, `Algorithm`,
  `Abstraction` and `Tricks`.
 
-Here recommand a nice tool to view c/c++ and java sources: sourcetrail_.
+Here recommend a nice tool to view c/c++ and java sources: sourcetrail_.
 
 .. _sourcetrail: https://www.sourcetrail.com/
 

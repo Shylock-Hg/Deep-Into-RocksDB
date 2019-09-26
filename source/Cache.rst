@@ -1,12 +1,12 @@
 Cache in RocksDB
 ==================
 
-The cache is used to store the lastest used data in memory for fast searching.
+The cache is used to store the latest used data in memory for fast searching.
 
 0. LRU Cache
 --------------
 
-The LRU Cache in RocksDB implement O(1) Put/Get.The basic mechanism is puting
+The LRU Cache in RocksDB implement O(1) Put/Get.The basic mechanism is putting
 by double-linked list and getting by hash map.
 
 The basic data structure as below:
@@ -27,5 +27,5 @@ The basic data structure as below:
                          --> |  LRUHandle  | ----------> |  LRUHandle  | ----->
 
 
-So the RocksDB put(and evict) item by double-linked list and hash table, get item by hash
-table.
+So the RocksDB put(and evict) item by double-linked list and hash table,
+get item by hash table.

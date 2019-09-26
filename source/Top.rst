@@ -7,7 +7,7 @@ There is the top of RocksDB.
 
            > log files
            |
-           | sequencial write
+           |  sequential write
            |
   API ------> MemTable(current in list) ... ImmutableMemTable
       GET/PUT                                      |

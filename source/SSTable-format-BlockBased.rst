@@ -95,7 +95,7 @@ The *data group* format as below:
    of filter, the one is the top-level index for 2nd filter block, the other is
    the real of filter meta block.
 
-1.1. Properities Block
+1.1. Properties Block
 ```````````````````````
 
 +------------+----------------+
@@ -104,7 +104,7 @@ The *data group* format as below:
 | props      | K/V[P]         |
 +------------+----------------+
 
-Default propertiies as below:
+Default properties as below:
 
 - data size
 - index size
@@ -163,7 +163,7 @@ The entry of each metaindex block.
 
 The entry of each data block.
 
-| K : string >= last key and before first key in sucessive data block.
+| K : string >= last key and before first key in successive data block.
 | V : BlockHandle
 
 +-------------------+------------------+
