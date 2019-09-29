@@ -3,7 +3,7 @@ WAL file format
 
 | The Write-Ahead-Log file persist the sequence of data/operation will apply to
  *MemTable* later.
-| This file are separate to fixed-length block on top level which steped by
+| This file are separate to fixed-length block on top level which stepped by
  *kBlockSize*.The *record* which too long will be splitted to multiple
  fragments which specified by *type* (First, Middle and Last).The block can't
  be full fit will be padded
