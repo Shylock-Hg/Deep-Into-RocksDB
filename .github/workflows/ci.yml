@@ -1,0 +1,30 @@
+name: Deep Into RocksDB building
+
+on: push
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-18.04
+    container:
+      image: python
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: requirements
+        run: |
+          pip install -r requirements.txt
+        shell: bash
+      - name: building
+        run: |
+          make html
+        shell: bash
+      - name: Deploy
+        if: success()
+        uses: crazy-max/ghaction-github-pages@v1
+        with:
+          target_branch: gh-pages
+          build_dir: build/html
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
