@@ -6,12 +6,14 @@ jobs:
   build:
     name: build
     runs-on: ubuntu-18.04
-    container:
-      image: readthedocs/build
     steps:
       - uses: actions/checkout@v1
         with:
           fetch-depth: 1
+      - name: requirements
+        run: |
+          pip install -r requirements.txt
+        shell: bash
       - name: building
         run: |
           make html
