@@ -1,0 +1,423 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Plain SSTable format &mdash; deep into RocksDB 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="WAL file format" href="WAL-file-format.html" />
+    <link rel="prev" title="SSTable format Block Based" href="SSTable-format-BlockBased.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> deep into RocksDB
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Top.html">Top</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Files.html">Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SSTable-format-BlockBased.html">SSTable format Block Based</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Plain SSTable format</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#top-level">Top-Level</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#row-format">0. Row Format</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#key-encoding">0.0 Key Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#property">1. Property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#in-memory-index">In-Memory Index</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#format">Format</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="WAL-file-format.html">WAL file format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="MEMTable.html">MemTable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Cache.html">Cache in RocksDB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Flush.html">Flush</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Put.html">Put</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">deep into RocksDB</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Plain SSTable format</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/SSTable-format-plain.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="plain-sstable-format">
+<h1>Plain SSTable format<a class="headerlink" href="#plain-sstable-format" title="Permalink to this headline">¶</a></h1>
+<div class="line-block">
+<div class="line"><em>PlainTable</em> is a RocksDB’s SST file format optimized for low query latency on
+pure-memory or really low-latency media.</div>
+</div>
+<div class="section" id="top-level">
+<h2>Top-Level<a class="headerlink" href="#top-level" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="48%" />
+<col width="52%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>label</td>
+<td>type</td>
+</tr>
+<tr class="row-even"><td>data rows</td>
+<td>row[N]</td>
+</tr>
+<tr class="row-odd"><td>property</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>footer</td>
+<td>fixed size</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="row-format">
+<h2>0. Row Format<a class="headerlink" href="#row-format" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The format of data row.</p>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>label</td>
+<td>type</td>
+</tr>
+<tr class="row-even"><td>encoded_key</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>value_size</td>
+<td>varint32</td>
+</tr>
+<tr class="row-even"><td>value</td>
+<td>char[value_size]</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="key-encoding">
+<h3>0.0 Key Encoding<a class="headerlink" href="#key-encoding" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li><dl class="first docutils">
+<dt>Plain Encoding</dt>
+<dd><ul class="first last">
+<li>internal encoding with fixed given key size</li>
+<li>[length of key : varint32] + [user key] + [internal encoding] when
+without fixed given key size</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li>Prefix Encoding</li>
+</ol>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Share the same prefix of keys to save size.</p>
+</div>
+<p>There are three type packets as below:</p>
+<div class="line-block">
+<div class="line">- Full Key: with the full key bytes. [full key flag + size] +
+[full user key] + [internal encoding]</div>
+<div class="line">- Second Key: with the prefix size. [prefix key flag + size] +
+[suffix key flag + size] + [suffix key] + [internal encoding]</div>
+<div class="line">- Others: with the suffix key bytes. [suffix key flag + size] +
+[suffix key] + [internal encoding]</div>
+</div>
+<div class="line-block">
+<div class="line">The [flag + size] is the byte with format as below:</div>
+<div class="line">[type(2b)|size(6b)]. But all bits of size will be set to 1 when size
+beyond the limit, and there will be <em>varint32</em> writen after this and the
+size are the sum of 0x3F and value of variable size.The type are <em>full key</em>
+, <em>second key</em> and <em>suffix key</em>.</div>
+</div>
+<ol class="arabic simple" start="3">
+<li>Internal Encoding</li>
+</ol>
+<div class="line-block">
+<div class="line">In both of Plain and Prefix encoding data, internal encoding of the internal
+are encoded in the same way. The internal encoding seems as below:</div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="16%" />
+<col width="61%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>label</td>
+<td>type</td>
+<td>note</td>
+</tr>
+<tr class="row-even"><td>type</td>
+<td>char</td>
+<td>row type(value, delete, merge, etc.)</td>
+</tr>
+<tr class="row-odd"><td>sequence ID</td>
+<td>char[7]</td>
+<td>&#160;</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line">This can be compressed as below when no previous value for this key in
+the system.</div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>0x80</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="property">
+<h2>1. Property<a class="headerlink" href="#property" title="Permalink to this headline">¶</a></h2>
+<div class="line-block">
+<div class="line">1. data_size : the end of data part of the file.</div>
+<div class="line">2. fixed_key_len : length of the keys if all keys has the same length,
+0 otherwise.</div>
+</div>
+</div>
+<div class="section" id="in-memory-index">
+<h2>In-Memory Index<a class="headerlink" href="#in-memory-index" title="Permalink to this headline">¶</a></h2>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">the In-Memory Index was built by scan the Plain SSTable file. So this is
+not a part of Plain SSTable file now.</p>
+</div>
+<div class="line-block">
+<div class="line">On top level, In-memory Index is the hash table with each bucket to be either
+offset in the file or a binary search index. The binary search buffer is
+needed in two cases:</div>
+</div>
+<div class="line-block">
+<div class="line">1. Hash Collisions: two or more prefixes are hashed to the same bucket.</div>
+<div class="line">2. Too many keys for one prefix: need to speed-up the look-up inside the
+prefix.</div>
+</div>
+<div class="section" id="format">
+<h3>Format<a class="headerlink" href="#format" title="Permalink to this headline">¶</a></h3>
+<div class="line-block">
+<div class="line">The index consists of two piece fo memory: an array as hash buckets, and some
+binary search buffers.</div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="22%" />
+<col width="78%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td colspan="2">record</td>
+</tr>
+<tr class="row-even"><td>Flag(1b)</td>
+<td>Offset to binary search buffer or file(31b)</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line">1. If Flag = 0 and Offset equals to the offset of end of the data of the file,
+it means NULL - no data for this bucket; if the offset is smaller, it means
+there is only one prefix for this hash bucket.</div>
+<div class="line">2. If Flag = 1, it means the offset is for binary search buffer.</div>
+</div>
+<p>The format of binary search buffer is as below:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="34%" />
+<col width="66%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>label</td>
+<td>type</td>
+</tr>
+<tr class="row-even"><td>number_of_records</td>
+<td>varint32</td>
+</tr>
+<tr class="row-odd"><td>records</td>
+<td>fixed32[number_of_records]</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="WAL-file-format.html" class="btn btn-neutral float-right" title="WAL file format" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="SSTable-format-BlockBased.html" class="btn btn-neutral float-left" title="SSTable format Block Based" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Shylock Hg
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

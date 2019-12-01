@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>MemTable &mdash; deep into RocksDB 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Cache in RocksDB" href="Cache.html" />
+    <link rel="prev" title="WAL file format" href="WAL-file-format.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> deep into RocksDB
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Top.html">Top</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Files.html">Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SSTable-format-BlockBased.html">SSTable format Block Based</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SSTable-format-plain.html">Plain SSTable format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="WAL-file-format.html">WAL file format</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">MemTable</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#implementation-of-skiplist">0. Implementation of SkipList</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#skiplist">0.0. SkipList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#inlineskiplist">0.1. InlineSkipList</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#implementation-of-memtable">1. Implementation of MemTable</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#hashskiplistrep">1.0. HashSkipListRep</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hashlinklistrep">1.1. HashLinkListRep</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#skiplistrep">1.2. SkipListRep</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vectorrep">1.3. VectorRep</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Cache.html">Cache in RocksDB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Flush.html">Flush</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Put.html">Put</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">deep into RocksDB</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>MemTable</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/MEMTable.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="memtable">
+<h1>MemTable<a class="headerlink" href="#memtable" title="Permalink to this headline">¶</a></h1>
+<div class="line-block">
+<div class="line">There are some basic knowledge of <em>skiplist</em> structure which you need to learn
+before reading remaining.There is a nice blog about <em>skiplist</em>:</div>
+</div>
+<p><a class="reference external" href="http://ticki.github.io/blog/skip-lists-done-right/">http://ticki.github.io/blog/skip-lists-done-right/</a></p>
+<div class="section" id="implementation-of-skiplist">
+<h2>0. Implementation of SkipList<a class="headerlink" href="#implementation-of-skiplist" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="skiplist">
+<h3>0.0. SkipList<a class="headerlink" href="#skiplist" title="Permalink to this headline">¶</a></h3>
+<p>The <cite>Node</cite> of <em>SkipList</em> is defined as below:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">Node</span> <span class="p">{</span>
+    <span class="n">Key</span> <span class="k">const</span> <span class="n">key</span><span class="p">;</span>  <span class="c1">//!&lt; The key of K/V pair (user data)</span>
+    <span class="c1">// the SkipList Column, next_[0] is the lowest list item</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">*&gt;</span> <span class="n">next_</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="inlineskiplist">
+<h3>0.1. InlineSkipList<a class="headerlink" href="#inlineskiplist" title="Permalink to this headline">¶</a></h3>
+<p>The <cite>Node</cite> of <em>InlineSkipList</em> is defined as below:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">Node</span> <span class="p">{</span>
+    <span class="c1">// the next_[0] is the lowest list item, next_[-1] is higher one</span>
+    <span class="c1">// the next_+1 point to the value of key</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">*&gt;</span> <span class="n">next_</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The <cite>Node</cite> of <em>InlineSkipList</em> are defined not very property, so you must do
+<cite>reinterpret_cast</cite> to access value of <em>key</em>.But there are two optimization
+while the <em>Key</em> are pointer in <em>SkipList</em>:</div>
+</div>
+<ol class="arabic simple">
+<li>Less memory consumption for one Key pointer.</li>
+<li>Less cache missing for better locality memory.</li>
+</ol>
+</div>
+</div>
+<div class="section" id="implementation-of-memtable">
+<h2>1. Implementation of MemTable<a class="headerlink" href="#implementation-of-memtable" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="hashskiplistrep">
+<h3>1.0. HashSkipListRep<a class="headerlink" href="#hashskiplistrep" title="Permalink to this headline">¶</a></h3>
+<div class="line-block">
+<div class="line">Each bucket of the HashMap contains pointer to one
+SkipList (InlineSkipList in fact).</div>
+</div>
+</div>
+<div class="section" id="hashlinklistrep">
+<h3>1.1. HashLinkListRep<a class="headerlink" href="#hashlinklistrep" title="Permalink to this headline">¶</a></h3>
+<div class="line-block">
+<div class="line">Each bucket of HashMap contains pointer to <cite>LinkList</cite> (for smaller count)
+or <cite>SkipList</cite> (for bigger count).</div>
+</div>
+</div>
+<div class="section" id="skiplistrep">
+<h3>1.2. SkipListRep<a class="headerlink" href="#skiplistrep" title="Permalink to this headline">¶</a></h3>
+<p><cite>SkipListRep</cite> store K/V by single <cite>SkipList</cite>.</p>
+</div>
+<div class="section" id="vectorrep">
+<h3>1.3. VectorRep<a class="headerlink" href="#vectorrep" title="Permalink to this headline">¶</a></h3>
+<p><cite>VectorRep</cite> store K/V by single <cite>vector</cite>.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Cache.html" class="btn btn-neutral float-right" title="Cache in RocksDB" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="WAL-file-format.html" class="btn btn-neutral float-left" title="WAL file format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Shylock Hg
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

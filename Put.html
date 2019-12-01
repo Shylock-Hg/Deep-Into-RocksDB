@@ -1,0 +1,424 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Put &mdash; deep into RocksDB 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Flush" href="Flush.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> deep into RocksDB
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Top.html">Top</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Files.html">Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SSTable-format-BlockBased.html">SSTable format Block Based</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SSTable-format-plain.html">Plain SSTable format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="WAL-file-format.html">WAL file format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="MEMTable.html">MemTable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Cache.html">Cache in RocksDB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Flush.html">Flush</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Put</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">deep into RocksDB</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Put</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/Put.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="put">
+<h1>Put<a class="headerlink" href="#put" title="Permalink to this headline">¶</a></h1>
+<p>The key/value put operation flow:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                                            <span class="o">-&gt;</span> <span class="n">WALOnly</span>
+<span class="n">DB</span><span class="p">::</span><span class="n">Put</span> <span class="o">-&gt;</span> <span class="n">WriteBatch</span><span class="p">::</span><span class="n">Put</span> <span class="o">-&gt;</span> <span class="n">DB</span><span class="p">::</span><span class="n">Write</span> <span class="o">-&gt;</span>  <span class="o">-&gt;</span> <span class="n">unorderedWrite</span>
+                                            <span class="o">-&gt;</span> <span class="n">pipelineWrite</span>
+
+<span class="n">DBImpl</span><span class="p">::</span><span class="n">WriteWALOnly</span> <span class="o">-&gt;</span> <span class="n">DBImpl</span><span class="p">::</span><span class="n">ConcurrentWriteToWAL</span> <span class="o">-&gt;</span> <span class="n">DBImpl</span><span class="p">::</span><span class="n">WriteToWAL</span>
+<span class="o">-&gt;</span> <span class="n">Writer</span><span class="p">::</span><span class="n">AddRecord</span>
+
+<span class="n">DBImpl</span><span class="p">::</span><span class="n">UnorderedWrite</span> <span class="o">-&gt;</span> <span class="n">WriteBatchInternal</span><span class="p">::</span><span class="n">InsertInto</span>
+<span class="o">-&gt;</span> <span class="n">WriteBatch</span><span class="p">::</span><span class="n">Iterate</span> <span class="o">-&gt;</span> <span class="n">MemTableInserter</span><span class="p">::</span><span class="n">PutCF</span> <span class="o">-&gt;</span> <span class="n">MemTable</span><span class="p">::</span><span class="n">Add</span><span class="o">/</span><span class="n">Update</span>
+
+<span class="n">DBImpl</span><span class="p">::</span><span class="n">PipelineWrite</span> <span class="o">-&gt;</span> <span class="n">WriteThread</span><span class="p">::</span><span class="n">JoinBatchGroup</span>
+<span class="o">-&gt;</span> <span class="n">WriteThread</span><span class="p">::</span><span class="n">EnterAsBatchGroupLeader</span> <span class="o">-&gt;</span> <span class="n">DBImpl</span><span class="p">::</span><span class="n">WriteToWAL</span>
+<span class="o">-&gt;</span> <span class="n">WriteThread</span><span class="p">::</span><span class="n">ExitAsBatchGroupLeader</span> <span class="o">-&gt;</span> <span class="n">WriteThread</span><span class="p">::</span><span class="n">EnterAsMemTableWriter</span>
+<span class="o">-&gt;</span> <span class="n">WriteThread</span><span class="p">::</span><span class="n">LaunchParallelMemTableWriters</span><span class="o">/</span><span class="n">WriteBatchInternal</span><span class="p">::</span><span class="n">InsertInto</span>
+<span class="o">-&gt;</span> <span class="n">WriteThread</span><span class="p">::</span><span class="n">ExitAsMemTableWriter</span>
+
+<span class="n">SimpleWrite</span> <span class="n">WriteThread</span><span class="p">::</span><span class="n">JoinBatchGroup</span><span class="o">-&gt;</span><span class="n">WriteThread</span><span class="p">::</span><span class="n">EnterAsBatchGroupLeader</span>
+<span class="o">-&gt;</span> <span class="n">DBImpl</span><span class="p">::</span><span class="n">WriteToWAL</span><span class="o">/</span><span class="n">DBImpl</span><span class="p">::</span><span class="n">ConcurrentWriteToWAL</span>
+<span class="o">-&gt;</span> <span class="n">WriteBatchInternal</span><span class="p">::</span><span class="n">InsertInto</span><span class="o">/</span><span class="n">WriteThread</span><span class="p">::</span><span class="n">LaunchParallelMemTableWriters</span>
+<span class="o">-&gt;</span> <span class="n">WriteThread</span><span class="p">::</span><span class="n">CompleteParallelMemTableWriter</span>
+<span class="o">-&gt;</span> <span class="n">WriteThread</span><span class="p">::</span><span class="n">ExitAsBatchGroupLeader</span>
+</pre></div>
+</div>
+<p>Multiple Threads Write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                                <span class="n">Group</span>
+           <span class="n">Thread1</span>              <span class="n">Thread2</span>                 <span class="n">Thread3</span>
+              <span class="o">|</span>                  <span class="o">|</span>                         <span class="o">|</span>
+              <span class="n">V</span>                  <span class="n">V</span>                         <span class="n">V</span>
+                           <span class="n">Join</span> <span class="n">BatchGroup</span>
+              <span class="o">|</span>                  <span class="o">|</span>                         <span class="o">|</span>
+              <span class="n">V</span>                  <span class="n">V</span>                         <span class="n">V</span>
+   <span class="n">Enter</span> <span class="n">As</span> <span class="n">BatchGroupLeader</span>          <span class="o">--&gt;</span>  <span class="n">AwaitState</span>
+              <span class="o">|</span>                       <span class="o">|</span>
+              <span class="n">V</span>           <span class="o">|------------</span>
+       <span class="n">Batch</span> <span class="n">Commit</span> <span class="n">WAL</span>   <span class="o">|</span>                    <span class="o">|</span>
+              <span class="o">|</span>           <span class="o">|</span>                    <span class="o">|</span><span class="n">transform</span> <span class="n">to</span> <span class="n">follower</span>
+              <span class="n">V</span>           <span class="o">|</span>                    <span class="o">|</span>
+<span class="n">Launch</span> <span class="n">Parallel</span> <span class="n">Followers</span><span class="o">--</span>                    <span class="o">|</span>
+              <span class="o">|</span>                                <span class="o">|</span>
+              <span class="n">V</span>                                <span class="n">V</span>
+                          <span class="n">Insert</span> <span class="n">MemTable</span>
+                                <span class="o">|</span>
+                                <span class="n">V</span>
+                      <span class="n">Complete</span> <span class="n">Parallel</span> <span class="n">Writers</span>
+              <span class="o">|</span>
+              <span class="n">V</span>
+<span class="n">Exit</span> <span class="n">As</span> <span class="n">BatchGroupLeader</span> <span class="o">------&gt;</span> <span class="n">Notify</span> <span class="n">Successor</span> <span class="n">Leader</span>
+
+                            <span class="o">|</span>
+                            <span class="n">v</span>
+                <span class="n">Write</span> <span class="n">End</span> <span class="ow">and</span> <span class="n">Return</span>
+</pre></div>
+</div>
+<p>Multiple Threads Pipeline Write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                             <span class="n">Group</span>
+        <span class="n">Thread1</span>              <span class="n">Thread2</span>                 <span class="n">Thread3</span>
+           <span class="o">|</span>                  <span class="o">|</span>                         <span class="o">|</span>
+           <span class="n">V</span>                  <span class="n">V</span>                         <span class="n">V</span>
+                        <span class="n">Join</span> <span class="n">BatchGroup</span>
+           <span class="o">|</span>                  <span class="o">|</span>                         <span class="o">|</span>
+           <span class="n">V</span>                  <span class="n">V</span>                         <span class="n">V</span>
+<span class="n">Enter</span> <span class="n">As</span> <span class="n">BatchGroupLeader</span>          <span class="o">--&gt;</span>  <span class="n">AwaitState</span>
+           <span class="o">|</span>                       <span class="o">|</span>           <span class="o">|</span>
+           <span class="n">V</span>              <span class="o">|---------</span>           <span class="o">|</span>
+    <span class="n">Batch</span> <span class="n">Commit</span> <span class="n">WAL</span>      <span class="o">|</span>                    <span class="o">|</span>
+           <span class="o">|</span>              <span class="o">|</span>                    <span class="o">|</span><span class="n">transform</span> <span class="n">to</span> <span class="n">follower</span>
+           <span class="n">V</span>              <span class="o">|</span>                    <span class="o">|</span>
+ <span class="n">Exit</span> <span class="n">As</span> <span class="n">BatchGroupLeader</span> <span class="o">--&gt;</span> <span class="n">Notify</span> <span class="n">Successor</span> <span class="o">|</span>
+           <span class="o">|</span>                                   <span class="o">|</span>
+           <span class="n">V</span>                                   <span class="n">V</span>
+
+                     <span class="n">EnterAsMemTableWriter</span>
+                             <span class="o">|</span>
+                             <span class="n">V</span>
+                       <span class="n">Insert</span> <span class="n">MemTable</span>
+                             <span class="o">|</span>
+                             <span class="n">V</span>
+                     <span class="n">ExitAsMemTableWriter</span>
+                             <span class="o">|</span>
+                             <span class="n">v</span>
+                     <span class="n">Write</span> <span class="n">End</span> <span class="ow">and</span> <span class="n">Return</span>
+</pre></div>
+</div>
+<p>The State of Writer:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="45%" />
+<col width="55%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>state name</td>
+<td>note</td>
+</tr>
+<tr class="row-even"><td>STATE_INIT</td>
+<td>Created</td>
+</tr>
+<tr class="row-odd"><td>STATE_GROUP_LEADER</td>
+<td>JoinBatchGroup, as Leader if first Join</td>
+</tr>
+<tr class="row-even"><td>STATE_MEMTABLE_WRITER_LEADER</td>
+<td>Serial Write Leader</td>
+</tr>
+<tr class="row-odd"><td colspan="2">STATE_PARALLEL_MEMTABLE_WRITER    | Parallel Write Leader</td>
+</tr>
+<tr class="row-even"><td>STATE_COMPLETED</td>
+<td>Complete Write</td>
+</tr>
+<tr class="row-odd"><td>STATE_LOCKED_WAITING</td>
+<td>Waiting</td>
+</tr>
+</tbody>
+</table>
+<p>The State Transform:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>            <span class="n">JoinBatchGroup</span>                       <span class="n">ConcurrentWriteToWAL</span>
+<span class="n">STATE_INIT</span>  <span class="o">---------------&gt;</span> <span class="n">STATE_GROUP_LEADER</span> <span class="o">----------------------&gt;</span> <span class="n">STATE_COMPLETED</span>
+    <span class="o">|</span>                          <span class="o">^</span>     <span class="o">|</span>                                      <span class="o">^</span>
+    <span class="o">|</span> <span class="n">Waiting</span> <span class="n">Previous</span>   <span class="o">|-----|</span>     <span class="o">|</span>                                      <span class="o">|</span>
+    <span class="n">V</span> <span class="n">Writing</span>            <span class="o">|</span>           <span class="n">V</span>                                      <span class="o">|</span>
+<span class="n">STATE_LOCKED_WAITING</span> <span class="o">-----</span>      <span class="n">STATE_LOCKED_WAITING</span>              <span class="n">STATE_LOCKED_WAITING</span>
+                                    <span class="o">|</span>                                       <span class="o">^</span>
+                                    <span class="o">|------&gt;</span> <span class="n">STATE_MEMTABLE_WRITER_LEADER</span> <span class="o">--|</span>
+                                    <span class="o">|------&gt;</span> <span class="n">STATE_PARALLEL_MEMTABLE_WRITER</span><span class="o">-|</span>
+</pre></div>
+</div>
+<p>The data structure transform:</p>
+<div class="line-block">
+<div class="line">1. The (K:string, V:string) tuple user given.</div>
+<div class="line">2. The WriteBatch rep as below:</div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="18%" />
+<col width="69%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Label</td>
+<td>Type</td>
+<td>note</td>
+</tr>
+<tr class="row-even"><td>Seq</td>
+<td>Byte[8]</td>
+<td>Sequence Number</td>
+</tr>
+<tr class="row-odd"><td>count</td>
+<td>Fixed32</td>
+<td>KV count</td>
+</tr>
+<tr class="row-even"><td>kType</td>
+<td>Byte</td>
+<td>Key Type</td>
+</tr>
+<tr class="row-odd"><td>kLen</td>
+<td>Var32</td>
+<td>Key Length(Optional timestamp suffix Length)</td>
+</tr>
+<tr class="row-even"><td>Key</td>
+<td>Byte[kLen]</td>
+<td>Key(Optional timestamp suffix)</td>
+</tr>
+<tr class="row-odd"><td>vLen</td>
+<td>Var32</td>
+<td>Value Length</td>
+</tr>
+<tr class="row-even"><td>Value</td>
+<td>Bytes[vLen]</td>
+<td>Value</td>
+</tr>
+<tr class="row-odd"><td>&#160;</td>
+<td>KV…</td>
+<td>More KV</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line">3. Merge multiple WriteBatch(Current and others in WriteThread) to one
+WriteBatch;</div>
+<div class="line">4. Write to WAL record;</div>
+<div class="line">5. Fetch Key/Value(Slice, Slice),kType from Current WriteBatch</div>
+<div class="line">6. Write Current Key/Value/kType to WriteBatch for transaction(Optional);</div>
+<div class="line">7. Write Current Key/Value/kType(Combine to internal Key) to MemTable</div>
+</div>
+<p>The internal key in MemTable:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="23%" />
+<col width="65%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Label</td>
+<td>Type</td>
+<td>note</td>
+</tr>
+<tr class="row-even"><td>kLen</td>
+<td>Var32</td>
+<td>internal key Length</td>
+</tr>
+<tr class="row-odd"><td>Key</td>
+<td>Byte[kLen-8]</td>
+<td>The key from last flow</td>
+</tr>
+<tr class="row-even"><td>Packed</td>
+<td>Fixed64</td>
+<td>[SeqNumber[56],kType[8]]</td>
+</tr>
+<tr class="row-odd"><td>vLen</td>
+<td>Var32</td>
+<td>The value Length</td>
+</tr>
+<tr class="row-even"><td>Value</td>
+<td>Byte[vLen]</td>
+<td>The value</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="Flush.html" class="btn btn-neutral float-left" title="Flush" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Shylock Hg
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

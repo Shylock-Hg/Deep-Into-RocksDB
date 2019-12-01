@@ -1,0 +1,286 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Top &mdash; deep into RocksDB 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Files" href="Files.html" />
+    <link rel="prev" title="Welcome to deep into RocksDB’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> deep into RocksDB
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Top</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#memtable">0. MemTable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sstable-files">1. SSTable files</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Files.html">Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SSTable-format-BlockBased.html">SSTable format Block Based</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SSTable-format-plain.html">Plain SSTable format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="WAL-file-format.html">WAL file format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="MEMTable.html">MemTable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Cache.html">Cache in RocksDB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Flush.html">Flush</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Put.html">Put</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">deep into RocksDB</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Top</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/Top.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="top">
+<h1>Top<a class="headerlink" href="#top" title="Permalink to this headline">¶</a></h1>
+<p>There is the top of RocksDB.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>         <span class="o">&gt;</span> <span class="n">log</span> <span class="n">files</span>
+         <span class="o">|</span>
+         <span class="o">|</span>  <span class="n">sequential</span> <span class="n">write</span>
+         <span class="o">|</span>
+<span class="n">API</span> <span class="o">------&gt;</span> <span class="n">MemTable</span><span class="p">(</span><span class="n">current</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">)</span> <span class="o">...</span> <span class="n">ImmutableMemTable</span>
+    <span class="n">GET</span><span class="o">/</span><span class="n">PUT</span>                                      <span class="o">|</span>
+                    <span class="k">async</span><span class="o">-</span><span class="n">flush</span> <span class="p">(</span><span class="n">worker</span> <span class="n">threads</span><span class="p">)</span>  <span class="o">|</span>
+                                                 <span class="n">V</span>
+                                        <span class="mi">0</span><span class="o">-</span><span class="n">level</span> <span class="n">SSTable</span> <span class="n">files</span> <span class="p">(</span><span class="n">unsorted</span><span class="p">)</span>
+                                                 <span class="o">|</span>
+                 <span class="k">async</span><span class="o">-</span><span class="n">compact</span> <span class="p">(</span><span class="n">worker</span> <span class="n">threads</span><span class="p">)</span>  <span class="o">|</span>
+                                                 <span class="n">V</span>
+                                            <span class="n">SSTable</span> <span class="n">files</span> <span class="p">(</span><span class="nb">sorted</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="memtable">
+<h2>0. MemTable<a class="headerlink" href="#memtable" title="Permalink to this headline">¶</a></h2>
+<p>The class architecture as below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                       <span class="n">MemTableList</span>
+                            <span class="o">|</span>
+                            <span class="o">|</span> <span class="n">combine</span>
+                            <span class="n">V</span>
+                      <span class="n">MemTableVersion</span> <span class="p">(</span><span class="n">MemTable</span> <span class="n">List</span><span class="p">)</span>
+                            <span class="o">|</span>
+                            <span class="o">|</span> <span class="n">combine</span>
+                            <span class="n">V</span>
+                         <span class="n">MemTable</span>
+                            <span class="o">|</span>
+                            <span class="o">|</span> <span class="n">combine</span>
+                            <span class="n">V</span>
+                        <span class="n">MemTableRep</span>
+                            <span class="o">|</span>
+                            <span class="o">|</span> <span class="n">inherit</span>
+      <span class="o">----------------------------------------------------</span>
+      <span class="o">|</span>               <span class="o">|</span>                 <span class="o">|</span>                <span class="o">|</span> <span class="n">factory</span> <span class="n">classes</span>
+      <span class="n">V</span>               <span class="n">V</span>                 <span class="n">V</span>                <span class="n">V</span>
+<span class="n">HashLinkListRep</span>  <span class="n">HashSkipListRep</span>   <span class="n">SkipListRep</span>       <span class="n">VectorRep</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">There is <em>MockMemTableRep</em> (with also factory) for testing.</p>
+</div>
+</div>
+<div class="section" id="sstable-files">
+<h2>1. SSTable files<a class="headerlink" href="#sstable-files" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">L0</span> <span class="n">files</span>  <span class="p">(</span><span class="n">flush</span> <span class="ow">and</span> <span class="n">unsorted</span><span class="p">,</span> <span class="n">duplicate</span> <span class="n">keys</span> <span class="n">maybe</span>
+    <span class="o">|</span>      <span class="n">sequence</span><span class="o">-</span><span class="n">based</span> <span class="n">linear</span> <span class="n">search</span><span class="p">,</span>
+    <span class="o">|</span>      <span class="n">compact</span> <span class="n">to</span> <span class="n">L1</span> <span class="n">when</span> <span class="n">count</span> <span class="n">of</span> <span class="n">files</span> <span class="n">reached</span><span class="p">)</span>
+    <span class="n">V</span>
+<span class="n">L</span><span class="o">*</span> <span class="n">files</span>  <span class="p">(</span><span class="n">compact</span> <span class="ow">and</span> <span class="nb">sorted</span><span class="p">,</span> <span class="n">unique</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">one</span> <span class="n">level</span>
+           <span class="n">key</span><span class="o">-</span><span class="n">based</span> <span class="n">binary</span> <span class="n">search</span><span class="p">,</span>
+           <span class="n">compact</span> <span class="n">to</span> <span class="n">lower</span> <span class="n">level</span> <span class="n">when</span> <span class="n">size</span> <span class="n">reached</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The class architecture as below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                                  <span class="n">TableBuilder</span><span class="o">/</span><span class="n">Reader</span>
+                                         <span class="o">|</span>
+                                         <span class="o">|</span> <span class="n">inherit</span>
+                                         <span class="n">V</span>
+        <span class="o">--------------------------------------------------------------</span>
+        <span class="o">|</span>                                <span class="o">|</span>                           <span class="o">|</span> <span class="n">factory</span> <span class="n">classes</span>
+        <span class="n">V</span>                                <span class="n">V</span>                           <span class="n">V</span>
+<span class="n">BlockBasedTableBuilder</span><span class="o">/</span><span class="n">Reader</span>  <span class="n">CuckooTableBuilder</span><span class="o">/</span><span class="n">Reader</span>  <span class="n">PlainTableBuilder</span><span class="o">/</span><span class="n">Reader</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">There are <em>MockTableBuiler/Reader</em> (with also factory) for testing.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Files.html" class="btn btn-neutral float-right" title="Files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to deep into RocksDB’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Shylock Hg
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
