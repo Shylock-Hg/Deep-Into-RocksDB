@@ -18,6 +18,8 @@ jobs:
         run: |
           make html
         shell: bash
+        env:
+          PATH: "/usr/local/bin:$PATH"
       - name: Deploy
         if: success()
         uses: crazy-max/ghaction-github-pages@v1
